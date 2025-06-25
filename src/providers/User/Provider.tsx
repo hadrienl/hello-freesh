@@ -1,29 +1,56 @@
-'use client'
+'use client';
 
-import { ReactNode, useCallback, useEffect, useState } from 'react'
-import {UserContext, userContext} from './context'
+import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { Profile, UserContext, userContext } from './context';
 import supabase from '@/utils/supabase';
 import { User } from '@supabase/supabase-js';
 
 interface UserProviderProps {
-  children: ReactNode
+  children: ReactNode;
+}
+
+async function fetchProfile(user: User) {
+  const req = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+  if (req.error) {
+    throw req.error;
+  }
+  return req.data as Profile;
 }
 
 export default function UserProvider({ children }: UserProviderProps) {
-  const [user, setUser] = useState<User|null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        setProfile(await fetchProfile(session.user));
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
     };
 
     checkUser();
 
     // Optionally, listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          setProfile(await fetchProfile(session.user));
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+      }
+    );
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -31,12 +58,21 @@ export default function UserProvider({ children }: UserProviderProps) {
   }, [supabase]);
 
   const signin = useCallback<UserContext['signin']>(async (email, password) => {
-    const req = await supabase.auth.signInWithPassword({ email, password })
+    const req = await supabase.auth.signInWithPassword({ email, password });
     if (req.data.user) {
-      setUser(user)
+      if (req.data.user) {
+        setProfile(await fetchProfile(req.data.user));
+        setUser(req.data.user);
+      } else {
+        setUser(null);
+      }
     }
-    return req
-  }, [])
+    return req;
+  }, []);
 
-  return <userContext.Provider value={{user, signin}}>{children}</userContext.Provider>
+  return (
+    <userContext.Provider value={{ user, profile, signin }}>
+      {children}
+    </userContext.Provider>
+  );
 }
