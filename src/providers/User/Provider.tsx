@@ -70,8 +70,14 @@ export default function UserProvider({ children }: UserProviderProps) {
     return req;
   }, []);
 
+  const signout = useCallback(() => {
+    setUser(null);
+    setProfile(null);
+    supabase.auth.signOut();
+  }, []);
+
   return (
-    <userContext.Provider value={{ user, profile, signin }}>
+    <userContext.Provider value={{ user, profile, signin, signout }}>
       {children}
     </userContext.Provider>
   );

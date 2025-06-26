@@ -14,6 +14,7 @@ export interface UserContext {
     email: string,
     password: string
   ) => Promise<AuthTokenResponsePassword>;
+  signout: () => void;
   profile: Profile | null;
 }
 

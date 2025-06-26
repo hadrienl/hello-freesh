@@ -2,5 +2,13 @@
   "home": {
     "title": "Hello Freesh!",
     "description": "Organisez vos recettes."
+  },
+  "kitchen": {
+    "sections": {
+      "root": "Ma cuisine",
+      "recettes": "Recettes",
+      "recettes/test": "Tests de recettes",
+      "calendrier": "Calendrier"
+    }
   }
 }
